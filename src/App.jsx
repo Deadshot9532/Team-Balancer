@@ -45,9 +45,27 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [copied, setCopied] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [userRole, setUserRole] = useState('moderator'); // 'moderator' or 'visitor'
 
-  // Load local history on mount
+  // Load state and history on mount
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedData = params.get('g');
+    const roleParam = params.get('r');
+
+    if (roleParam === 'v') setUserRole('visitor');
+
+    if (sharedData) {
+      try {
+        const decoded = JSON.parse(LZString.decompressFromEncodedURIComponent(sharedData));
+        if (decoded.players) setPlayers(decoded.players);
+        if (decoded.teamCount) setTeamCount(decoded.teamCount);
+        if (decoded.results) setResults(decoded.results);
+      } catch (e) {
+        console.error("Failed to decode shared data", e);
+      }
+    }
+
     const savedHistory = localStorage.getItem('team_balancer_history');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
@@ -86,14 +104,18 @@ export default function App() {
     }, 1200);
   };
 
-  const generateShareLink = () => {
-    const data = { players, teamCount };
+  const generateShareLink = (targetRole = 'visitor') => {
+    const data = { players, teamCount, results };
     const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
-    const url = `${window.location.origin}${window.location.pathname}?g=${compressed}`;
+    const roleKey = targetRole === 'visitor' ? 'v' : 'm';
+    const url = `${window.location.origin}${window.location.pathname}?g=${compressed}&r=${roleKey}`;
+
     navigator.clipboard.writeText(url);
-    setCopied(true);
+    setCopied(targetRole);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const isVisitor = userRole === 'visitor';
 
   return (
     <div className="min-h-screen bg-bg-dark text-white p-6 md:p-12 selection:bg-blue-500/30">
@@ -133,12 +155,14 @@ export default function App() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="premium-card group"
               >
-                <button
-                  onClick={() => removePlayer(p.id)}
-                  className="absolute top-4 right-4 p-2 text-white/10 hover:text-red-400 hover:bg-red-400/10 rounded-full transition-all"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {!isVisitor && (
+                  <button
+                    onClick={() => removePlayer(p.id)}
+                    className="absolute top-4 right-4 p-2 text-white/10 hover:text-red-400 hover:bg-red-400/10 rounded-full transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
 
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-2">
@@ -155,8 +179,9 @@ export default function App() {
                 <div className="space-y-4">
                   <div className="relative group/input">
                     <input
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 focus:border-blue-500 focus:bg-white/[0.07] outline-none transition-all font-bold placeholder:text-white/10"
+                      className={`w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 focus:border-blue-500 focus:bg-white/[0.07] outline-none transition-all font-bold placeholder:text-white/10 ${isVisitor ? 'pointer-events-none opacity-60' : ''}`}
                       value={p.name}
+                      readOnly={isVisitor}
                       onChange={(e) => updatePlayer(p.id, 'name', e.target.value)}
                       placeholder="Player Name..."
                     />
@@ -164,8 +189,10 @@ export default function App() {
 
                   <div className="pt-2">
                     <input
-                      type="range" min="1" max="10" step="1" className="w-full"
+                      type="range" min="1" max="10" step="1"
+                      className={`w-full ${isVisitor ? 'pointer-events-none opacity-30' : ''}`}
                       value={p.strength}
+                      disabled={isVisitor}
                       onChange={(e) => updatePlayer(p.id, 'strength', parseInt(e.target.value))}
                     />
                   </div>
@@ -174,24 +201,27 @@ export default function App() {
             ))}
           </AnimatePresence>
 
-          <motion.button
-            layout
-            onClick={addPlayer}
-            className="premium-card border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all min-h-[180px] group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Plus className="text-white/40" />
-            </div>
-            <span className="text-xs font-black text-white/20 uppercase tracking-widest">Connect Contender</span>
-          </motion.button>
+          {!isVisitor && (
+            <motion.button
+              layout
+              onClick={addPlayer}
+              className="premium-card border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all min-h-[180px] group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="text-white/40" />
+              </div>
+              <span className="text-xs font-black text-white/20 uppercase tracking-widest">Connect Contender</span>
+            </motion.button>
+          )}
         </div>
 
         <div className="premium-card bg-white/[0.04] border-white/10 p-8 flex flex-wrap items-center justify-between gap-8">
           <div className="space-y-3">
             <span className="text-[10px] text-white/30 uppercase font-black tracking-[0.2em] block">Formation Scale</span>
-            <div className="flex items-center gap-6">
+            <div className={`flex items-center gap-6 ${isVisitor ? 'pointer-events-none opacity-50' : ''}`}>
               <button
                 onClick={() => setTeamCount(Math.max(2, teamCount - 1))}
+                disabled={isVisitor}
                 className="w-10 h-10 border border-white/10 rounded-xl hover:bg-white/5 flex items-center justify-center transition-colors"
               >
                 <Minus size={18} />
@@ -202,6 +232,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => setTeamCount(teamCount + 1)}
+                disabled={isVisitor}
                 className="w-10 h-10 border border-white/10 rounded-xl hover:bg-white/5 flex items-center justify-center transition-colors"
               >
                 <Plus size={18} />
@@ -209,22 +240,31 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <button
-              onClick={generateShareLink}
-              className="flex items-center gap-3 px-8 py-5 rounded-2xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.07] transition-all font-black uppercase tracking-widest text-[10px] active:scale-95"
+              onClick={() => generateShareLink('visitor')}
+              className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.07] transition-all font-black uppercase tracking-widest text-[9px] active:scale-95"
             >
-              {copied ? <Check size={18} className="text-blue-400" /> : <Share2 size={18} />}
-              {copied ? "Engine Linked" : "Share Engine"}
+              {copied === 'visitor' ? <Check size={16} className="text-blue-400" /> : <Users size={16} />}
+              {copied === 'visitor' ? "Viewer Link Ready" : "Share as Viewer"}
             </button>
             <button
-              onClick={handleBalance}
-              disabled={isShuffling}
-              className={`px-12 py-5 bg-white text-bg-dark font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 shadow-2xl shadow-blue-500/20 transition-all hover:shadow-blue-500/40 active:scale-95 text-xs ${isShuffling ? 'opacity-50' : ''}`}
+              onClick={() => generateShareLink('moderator')}
+              className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.07] transition-all font-black uppercase tracking-widest text-[9px] active:scale-95"
             >
-              <Swords size={20} className={isShuffling ? 'animate-spin' : ''} />
-              {isShuffling ? 'Processing...' : 'Run Formation'}
+              {copied === 'moderator' ? <Check size={16} className="text-orange-400" /> : <Save size={16} />}
+              {copied === 'moderator' ? "Editor Link Ready" : "Share as Editor"}
             </button>
+            {!isVisitor && (
+              <button
+                onClick={handleBalance}
+                disabled={isShuffling}
+                className={`px-10 py-4 bg-white text-bg-dark font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 shadow-2xl shadow-blue-500/20 transition-all hover:shadow-blue-500/40 active:scale-95 text-[10px] ${isShuffling ? 'opacity-50' : ''}`}
+              >
+                <Swords size={18} className={isShuffling ? 'animate-spin' : ''} />
+                {isShuffling ? 'Processing...' : 'Run Formation'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -308,8 +348,13 @@ export default function App() {
         )}
       </main>
 
-      <footer className="max-w-4xl mx-auto mt-24 pb-12 text-center">
-        <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.8em]">Engine V2.2 // Quantum Balanced</div>
+      <footer className="max-w-4xl mx-auto mt-24 pb-12 text-center space-y-4">
+        {isVisitor && (
+          <div className="inline-block px-4 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Visitor Mode (Read-Only)</span>
+          </div>
+        )}
+        <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.8em]">Engine V2.5 // Quantum Roles Enforced</div>
       </footer>
     </div>
   );

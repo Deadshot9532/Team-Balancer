@@ -2,7 +2,8 @@
 
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
-  --color-bg-dark: #0f172a;
+  --color-bg-dark: #09090b;
+  /* slightly darker for better contrast */
 }
 
 :root {
@@ -10,50 +11,55 @@
 }
 
 body {
-  background-color: #0f172a;
+  background-color: #09090b;
   color: #f8fafc;
   font-family: "Inter", system-ui, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
+  /* Premium dark background with subtle glows */
   background-image:
-    radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.04), transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.04), transparent 50%);
+    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.03) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Safe area insets for mobile app feeling */
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 ::selection {
-  background-color: rgba(56, 189, 248, 0.2);
+  background-color: rgba(99, 102, 241, 0.3);
 }
 
 .glass-container {
-  background-color: rgba(30, 41, 59, 0.6);
+  background-color: rgba(24, 24, 27, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
   border-radius: 1.5rem;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .glass-container:hover {
   border-color: rgba(255, 255, 255, 0.12);
-  background-color: rgba(30, 41, 59, 0.8);
-}
-
-.premium-card {
-  composes: glass-container;
-  padding: 1.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.gradient-text {
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  background-image: linear-gradient(to right, #38bdf8, #818cf8);
+  background-color: rgba(24, 24, 27, 0.8);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.2),
+    0 4px 6px -2px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 input[type="range"] {
-  height: 0.375rem;
+  height: 0.5rem;
   border-radius: 9999px;
   appearance: none;
   cursor: pointer;
@@ -62,16 +68,22 @@ input[type="range"] {
 
 input[type="range"]::-webkit-slider-thumb {
   appearance: none;
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 50%;
-  background: #38bdf8;
+  background: white;
   cursor: pointer;
-  border: 2px solid #0f172a;
+  border: 3px solid #6366f1;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2);
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -87,6 +99,7 @@ input[type="range"]::-webkit-slider-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Dynamic Team Colors */
 .team-1 {
   border-top: 4px solid #38bdf8;
 }
@@ -103,6 +116,18 @@ input[type="range"]::-webkit-slider-thumb {
   border-top: 4px solid #34d399;
 }
 
-.team-generic {
-  border-top: 4px solid rgba(255, 255, 255, 0.2);
+.text-team-1-color {
+  color: #38bdf8;
+}
+
+.text-team-2-color {
+  color: #a78bfa;
+}
+
+.text-team-3-color {
+  color: #f472b6;
+}
+
+.text-team-4-color {
+  color: #34d399;
 }

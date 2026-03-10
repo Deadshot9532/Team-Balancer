@@ -2,26 +2,34 @@
 
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
-  --color-bg-dark: #09090b;
-  /* slightly darker for better contrast */
+
+  --color-cricheroes-green: #00A859;
+  --color-cricheroes-green-light: #e6f6ee;
+  --color-cricheroes-green-dark: #008746;
+
+  --color-cricheroes-blue: #005A9C;
+  --color-cricheroes-blue-light: #e6eff5;
+
+  --color-bg-light: #f3f4f6;
+  /* Tailwind gray-100 */
+  --color-surface: #ffffff;
+  --color-text-primary: #1f2937;
+  /* Tailwind gray-800 */
+  --color-text-secondary: #6b7280;
+  /* Tailwind gray-500 */
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background-color: #09090b;
-  color: #f8fafc;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-primary);
   font-family: "Inter", system-ui, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
-  /* Premium dark background with subtle glows */
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.03) 0%, transparent 60%);
-  background-attachment: fixed;
+  /* Clean, flat background with no gradients */
 }
 
 /* Safe area insets for mobile app feeling */
@@ -34,36 +42,51 @@ body {
 }
 
 ::selection {
-  background-color: rgba(99, 102, 241, 0.3);
+  background-color: var(--color-cricheroes-green-light);
+  color: var(--color-cricheroes-green-dark);
 }
 
-.glass-container {
-  background-color: rgba(24, 24, 27, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  border-radius: 1.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+/* Standard Material Card instead of Glassmorphism */
+.material-card {
+  background-color: var(--color-surface);
+  border-radius: 0.75rem;
+  /* 12px */
+  border: 1px solid #e5e7eb;
+  /* gray-200 */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
-.glass-container:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background-color: rgba(24, 24, 27, 0.8);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.2),
-    0 4px 6px -2px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+.material-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* Inputs */
+input[type="text"],
+input[type="number"] {
+  background-color: var(--color-surface);
+  border: 1px solid #d1d5db;
+  /* gray-300 */
+  color: var(--color-text-primary);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: var(--color-cricheroes-green);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-cricheroes-green);
+}
+
+/* Custom Range Slider */
 input[type="range"] {
-  height: 0.5rem;
+  height: 0.25rem;
   border-radius: 9999px;
   appearance: none;
   cursor: pointer;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #e5e7eb;
+  /* gray-200 */
+  background-image: linear-gradient(var(--color-cricheroes-green), var(--color-cricheroes-green));
+  background-repeat: no-repeat;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -71,17 +94,18 @@ input[type="range"]::-webkit-slider-thumb {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  background: white;
+  background: var(--color-cricheroes-green);
   cursor: pointer;
-  border: 3px solid #6366f1;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.1s;
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
-  transform: scale(1.2);
+  transform: scale(1.1);
 }
 
+/* Scrollbar styling for light theme */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -91,43 +115,22 @@ input[type="range"]::-webkit-slider-thumb:active {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: #cbd5e1;
+  /* slate-300 */
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #94a3b8;
+  /* slate-400 */
 }
 
-/* Dynamic Team Colors */
-.team-1 {
-  border-top: 4px solid #38bdf8;
+/* Clean UI list item */
+.list-item {
+  border-bottom: 1px solid #f3f4f6;
+  /* gray-100 */
 }
 
-.team-2 {
-  border-top: 4px solid #a78bfa;
-}
-
-.team-3 {
-  border-top: 4px solid #f472b6;
-}
-
-.team-4 {
-  border-top: 4px solid #34d399;
-}
-
-.text-team-1-color {
-  color: #38bdf8;
-}
-
-.text-team-2-color {
-  color: #a78bfa;
-}
-
-.text-team-3-color {
-  color: #f472b6;
-}
-
-.text-team-4-color {
-  color: #34d399;
+.list-item:last-child {
+  border-bottom: none;
 }

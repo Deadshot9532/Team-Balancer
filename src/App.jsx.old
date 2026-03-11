@@ -1,0 +1,47 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './pages/Login';
+import Onboarding from './pages/Onboarding';
+import Home from './pages/Home';
+import UserProfile from './pages/UserProfile';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+  const { currentUser } = useAuth();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  return children;
+};
+
+// Require Onboarding wrapper
+const RequireOnboarding = ({ children }) => {
+  const { currentUser, userProfile } = useAuth();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (currentUser && !userProfile?.uniqueName) return <Navigate to="/onboarding" replace />;
+  return children;
+};
+
+function AppRoutes() {
+  return (
+    <AnimatePresence mode="wait">
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+
+        <Route path="/" element={<RequireOnboarding><Home /></RequireOnboarding>} />
+        <Route path="/profile/:uniqueName" element={<UserProfile />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}

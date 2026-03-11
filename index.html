@@ -9,6 +9,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Universal Team Balancer</title>
+  <script>
+    window.addEventListener('error', function (event) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style = 'background:#b91c1c;color:white;padding:20px;z-index:9999;position:fixed;top:0;left:0;right:0;font-family:monospace;white-space:pre-wrap;border-bottom:4px solid #7f1d1d;';
+      errorDiv.innerHTML = `<h2>🚨 Fatal Error Before React Loaded</h2><br>${event.message}<br>${event.filename}:${event.lineno}<br><br>${event.error ? event.error.stack : ''}`;
+      document.body.appendChild(errorDiv);
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style = 'background:#b91c1c;color:white;padding:20px;z-index:9999;position:fixed;top:0;left:0;right:0;font-family:monospace;white-space:pre-wrap;border-bottom:4px solid #7f1d1d;';
+      errorDiv.innerHTML = `<h2>🚨 Unhandled Promise Rejection Before React Loaded</h2><br>${event.reason}`;
+      document.body.appendChild(errorDiv);
+    });
+  </script>
 </head>
 
 <body>

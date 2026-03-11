@@ -8,7 +8,7 @@ import LZString from 'lz-string';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, addDoc, orderBy, limit, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
 // --- Utils ---
 const balanceTeams = (players, teamCount) => {
@@ -95,7 +95,84 @@ export default function Home() {
 
         const savedHistory = localStorage.getItem('team_balancer_history');
         if (savedHistory) setHistory(JSON.parse(savedHistory));
+
+        // --- Cloud Backend Integration ---
+        let unsubscribeHistory = () => { };
+
+        if (currentUser) {
+            // 1. Load Squad from Cloud
+            const loadCloudSquad = async () => {
+                try {
+                    const squadRef = doc(db, 'squads', currentUser.uid);
+                    const squadSnap = await getDocs(query(collection(db, 'squads'), where('uid', '==', currentUser.uid)));
+
+                    if (!squadSnap.empty) {
+                        const cloudData = squadSnap.docs[0].data();
+                        if (cloudData.players && cloudData.players.length > 0) {
+                            setPlayers(cloudData.players);
+                        }
+                    } else if (!sharedData) {
+                        // Initialize default if nothing found
+                        setPlayers([{
+                            id: currentUser.uid,
+                            name: userProfile?.uniqueName || "Me",
+                            strength: 5,
+                            photoUrl: userProfile?.photoUrl
+                        }, ...Array.from({ length: 3 }).map((_, i) => ({
+                            id: Date.now() + i,
+                            name: "",
+                            strength: 5,
+                        }))]);
+                    }
+                } catch (err) {
+                    console.error("Cloud Squad Load Error:", err);
+                }
+            };
+
+            loadCloudSquad();
+
+            // 2. Real-time Match History from Cloud
+            const q = query(
+                collection(db, 'matches'),
+                where('userId', '==', currentUser.uid),
+                orderBy('timestamp', 'desc'),
+                limit(10)
+            );
+
+            unsubscribeHistory = onSnapshot(q, (snapshot) => {
+                const cloudHistory = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    log: doc.data().eventLog // Map eventLog to log for existing UI
+                }));
+                if (cloudHistory.length > 0) {
+                    setHistory(cloudHistory);
+                }
+            });
+        }
+
+        return () => unsubscribeHistory();
     }, [currentUser, userProfile]);
+
+    // Auto-save squad to cloud when players change
+    useEffect(() => {
+        if (currentUser && players.length > 0 && userRole === 'moderator') {
+            const timeoutId = setTimeout(async () => {
+                try {
+                    const squadRef = doc(db, 'squads', currentUser.uid);
+                    await setDoc(squadRef, {
+                        uid: currentUser.uid,
+                        players: players,
+                        lastUpdated: serverTimestamp()
+                    });
+                    console.log("☁️ Squad Saved to Cloud");
+                } catch (err) {
+                    console.error("Cloud Save Error:", err);
+                }
+            }, 2000); // 2 second debounce
+            return () => clearTimeout(timeoutId);
+        }
+    }, [players, currentUser, userRole]);
 
     const toggleDarkMode = () => {
         const newDarkMode = !isDarkMode;
@@ -126,18 +203,36 @@ export default function Home() {
         setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
     };
 
-    const handleBalance = () => {
+    const handleBalance = async () => {
         setIsShuffling(true);
         setResults(null);
-        setTimeout(() => {
+        setTimeout(async () => {
             const res = balanceTeams(players, teamCount);
             setResults(res);
+
+            // Save to Local History
             const newHistory = [{
                 log: res.eventLog,
                 id: Date.now()
             }, ...history].slice(0, 10);
             setHistory(newHistory);
             localStorage.setItem('team_balancer_history', JSON.stringify(newHistory));
+
+            // Save to Cloud Backend
+            if (currentUser && userRole === 'moderator') {
+                try {
+                    await addDoc(collection(db, 'matches'), {
+                        userId: currentUser.uid,
+                        teams: res.teams,
+                        eventLog: res.eventLog,
+                        timestamp: serverTimestamp()
+                    });
+                    console.log("🏆 Match History Saved to Cloud");
+                } catch (err) {
+                    console.error("Cloud History Save Error:", err);
+                }
+            }
+
             setIsShuffling(false);
         }, 800);
     };

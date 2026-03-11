@@ -76,13 +76,17 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             clearTimeout(timer);
             setCurrentUser(user);
-            setLoading(false); // Release the loading screen immediately!
+
+            console.log("🔍 Auth State Change:", user ? `User UID: ${user.uid} (${user.email || 'Guest'})` : "No User");
 
             try {
                 if (user) {
                     const profile = await fetchUserProfile(user.uid);
+                    console.log("📄 Profile Found in Firestore:", profile ? "YES" : "NO", profile);
+
                     if (!profile && user.isAnonymous) {
                         try {
+                            console.log("🆕 Initializing New Guest Profile...");
                             const guestData = {
                                 uid: user.uid,
                                 displayName: "Guest",
@@ -91,10 +95,11 @@ export const AuthProvider = ({ children }) => {
                             };
                             await updateUserProfile(user.uid, guestData);
                         } catch (guestErr) {
-                            console.error("Failed to initialize guest profile:", guestErr);
+                            console.error("❌ Failed to initialize guest profile:", guestErr);
                         }
                     } else if (!profile && !user.isAnonymous) {
                         try {
+                            console.log("🆕 Initializing New Google Profile...");
                             const initialData = {
                                 uid: user.uid,
                                 displayName: user.displayName || "Player",
@@ -104,14 +109,19 @@ export const AuthProvider = ({ children }) => {
                             };
                             await updateUserProfile(user.uid, initialData);
                         } catch (onboardErr) {
-                            console.error("Failed to initialize player profile:", onboardErr);
+                            console.error("❌ Failed to initialize player profile:", onboardErr);
                         }
+                    } else if (profile) {
+                        console.log("✅ Existing Profile Loaded. Unique Name:", profile.uniqueName || "MISSING");
                     }
                 } else {
                     setUserProfile(null);
                 }
             } catch (err) {
-                console.error("Auth state change error during profile fetch:", err);
+                console.error("❌ Auth state change error during profile fetch:", err);
+            } finally {
+                setLoading(false);
+                console.log("🏁 Auth Loading Finished");
             }
         });
 

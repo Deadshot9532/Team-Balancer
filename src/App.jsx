@@ -34,7 +34,13 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function AppRoutes() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile, loading } = useAuth();
+
+  // Robust redirection logic: if logged in but no unique name, force onboarding
+  // We check this after loading is done.
+  const needsOnboarding = currentUser && !userProfile?.uniqueName;
+
+  if (loading) return null; // Let the AuthProvider's loading screen handle it
 
   return (
     <AnimatePresence mode="wait">
@@ -42,21 +48,25 @@ function AppRoutes() {
         <Route path="/login" element={
           currentUser ? <Navigate to="/" /> : <Login />
         } />
+
         <Route path="/onboarding" element={
           <ProtectedRoute>
-            <Onboarding />
+            {userProfile?.uniqueName ? <Navigate to="/" /> : <Onboarding />}
           </ProtectedRoute>
         } />
+
         <Route path="/profile" element={
           <ProtectedRoute>
-            <UserProfile />
+            {needsOnboarding ? <Navigate to="/onboarding" /> : <UserProfile />}
           </ProtectedRoute>
         } />
+
         <Route path="/" element={
           <ProtectedRoute>
-            <Home />
+            {needsOnboarding ? <Navigate to="/onboarding" /> : <Home />}
           </ProtectedRoute>
         } />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </AnimatePresence>
